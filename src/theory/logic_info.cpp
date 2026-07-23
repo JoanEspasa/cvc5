@@ -383,6 +383,11 @@ std::string LogicInfo::getLogicString() const
         ss << "S";
         ++seen;
       }
+      if (d_theories[THEORY_PLAN])
+      {
+        ss << "PLAN";
+        ++seen;
+      }
       if (d_theories[THEORY_ARITH])
       {
         if (isDifferenceLogic())
@@ -598,6 +603,12 @@ void LogicInfo::setLogicString(std::string logicString)
           checkDuplicateTheory(THEORY_STRINGS, "S");
           enableTheory(THEORY_STRINGS);
           ++p;
+        }
+        else if (!strncmp(p, "PLAN", 4))
+        {
+          checkDuplicateTheory(THEORY_PLAN, "PLAN");
+          enableTheory(THEORY_PLAN);
+          p += 4;
         }
         else if (!strncmp(p, "IDL", 3))
         {

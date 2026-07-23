@@ -46,6 +46,7 @@ const char* toString(TheoryId theoryId)
     case THEORY_SETS: return "THEORY_SETS"; break;
     case THEORY_BAGS: return "THEORY_BAGS"; break;
     case THEORY_STRINGS: return "THEORY_STRINGS"; break;
+    case THEORY_PLAN: return "THEORY_PLAN"; break;
     case THEORY_QUANTIFIERS: return "THEORY_QUANTIFIERS"; break;
     default: break;
   }
@@ -75,6 +76,7 @@ std::string getStatsPrefix(TheoryId theoryId)
     case THEORY_SETS: return "theory::sets::"; break;
     case THEORY_BAGS: return "theory::bags::"; break;
     case THEORY_STRINGS: return "theory::strings::"; break;
+    case THEORY_PLAN: return "theory::plan::"; break;
     case THEORY_QUANTIFIERS: return "theory::quantifiers::"; break;
 
     default: break;

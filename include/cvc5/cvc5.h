@@ -4048,6 +4048,20 @@ class CVC5_EXPORT TermManager
    */
   Op mkOp(Kind kind, const std::string& arg);
 
+  /**
+   * Create a planning fluent term of an arbitrary sort.
+   *
+   * `TermManager::mkOp()` takes `uint32_t` indices only, so it can build the
+   * Boolean planning kinds but cannot express a fluent whose sort is a
+   * datatype, set or array. This is the entry point for those.
+   *
+   * @param index    The encoder's ground fluent id.
+   * @param timestep The timestep the fluent's state is indexed at.
+   * @param sort     The fluent's sort.
+   * @return The #PLAN_FLUENT term.
+   */
+  Term mkPlanFluent(uint32_t index, uint32_t timestep, const Sort& sort);
+
   /* Terms -------------------------------------------------------------- */
 
   /**
@@ -7032,6 +7046,17 @@ class CVC5_EXPORT Solver
    * @return The version string.
    */
   std::string getVersion() const;
+
+  /**
+   * Interrupt a running query.
+   *
+   * May be called from another thread or from a signal handler while a
+   * checkSat()-family call is in progress; the interrupted call then returns
+   * an unknown result with explanation
+   * cvc5::UnknownExplanation::INTERRUPTED. Has no effect if no query is
+   * running, or if the solver is not yet fully initialised.
+   */
+  void interrupt() const;
 
   /**
    * Get the associated term manager instance.

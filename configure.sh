@@ -78,6 +78,8 @@ Optional Path to Optional Packages:
   --glpk-dir=PATH          path to top level of GLPK installation
   --dep-path=PATH          path to a dependency installation dir
   --pythonic-path=PATH     path to the Pythonic API's repository
+  --cadical-path=PATH      path to a CaDiCaL repository, built in place
+                           instead of downloading the pinned tarball
 
 CMake Options (Advanced)
   -DVAR=VALUE              manually add CMake options
@@ -170,6 +172,7 @@ werror=default
 ipo=default
 
 glpk_dir=default
+cadical_path=default
 
 wasm=default
 wasm_flags=""
@@ -352,6 +355,17 @@ do
         esac
         ;;
 
+    --cadical-path) die "missing argument to $1 (try -h)" ;;
+    --cadical-path=*)
+        cadical_path="${1##*=}"
+        # Make the path absolute if it is not already: the build happens in a
+        # subdirectory, so a relative path would not resolve.
+        case $cadical_path in
+          /*) ;;                                  # absolute path
+          *) cadical_path=$(pwd)/$cadical_path ;; # make absolute path
+        esac
+        ;;
+
     --wasm-web) die "missing argument to $1 (try -h)" ;;
     --wasm-web=*)
         wasm_web_config="${1##*=}"
@@ -510,6 +524,8 @@ fi
   && cmake_opts="$cmake_opts -DCMAKE_PREFIX_PATH=$dep_path"
 [ "$pythonic_path" != default ] \
   && cmake_opts="$cmake_opts -DPYTHONIC_PATH=$pythonic_path"
+[ "$cadical_path" != default ] \
+  && cmake_opts="$cmake_opts -DCaDiCaL_SOURCE_PATH=$cadical_path"
 [ "$install_prefix" != default ] \
   && cmake_opts="$cmake_opts -DCMAKE_INSTALL_PREFIX=$install_prefix"
 [ -n "$program_prefix" ] \

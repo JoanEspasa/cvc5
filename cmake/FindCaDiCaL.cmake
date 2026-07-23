@@ -15,8 +15,19 @@
 
 include(deps-helper)
 
-find_path(CaDiCaL_INCLUDE_DIR NAMES cadical/cadical.hpp cadical/tracer.hpp)
-find_library(CaDiCaL_LIBRARIES NAMES cadical)
+# A local CaDiCaL checkout (-DCaDiCaL_SOURCE_PATH=..., or
+# `configure.sh --cadical-path=...`) takes precedence over anything installed on
+# the system: it is an explicit request to build *that* source, so the system
+# search is skipped entirely rather than allowed to win.
+if(CaDiCaL_SOURCE_PATH)
+  # find_path/find_library cache their results, so a configure that previously
+  # found a system CaDiCaL would keep winning here. Clear them.
+  unset(CaDiCaL_INCLUDE_DIR CACHE)
+  unset(CaDiCaL_LIBRARIES CACHE)
+else()
+  find_path(CaDiCaL_INCLUDE_DIR NAMES cadical/cadical.hpp cadical/tracer.hpp)
+  find_library(CaDiCaL_LIBRARIES NAMES cadical)
+endif()
 
 set(CaDiCaL_FOUND_SYSTEM FALSE)
 if(CaDiCaL_INCLUDE_DIR AND CaDiCaL_LIBRARIES)
@@ -76,9 +87,12 @@ if(CaDiCaL_INCLUDE_DIR AND CaDiCaL_LIBRARIES)
 endif()
 
 if(NOT CaDiCaL_FOUND_SYSTEM)
-  check_ep_downloaded("CaDiCaL-EP")
-  if(NOT CaDiCaL-EP_DOWNLOADED)
-    check_auto_download("CaDiCaL" "")
+  # Nothing is downloaded when building from a local checkout.
+  if(NOT CaDiCaL_SOURCE_PATH)
+    check_ep_downloaded("CaDiCaL-EP")
+    if(NOT CaDiCaL-EP_DOWNLOADED)
+      check_auto_download("CaDiCaL" "")
+    endif()
   endif()
 
   include(CheckSymbolExists)
@@ -125,13 +139,25 @@ if(NOT CaDiCaL_FOUND_SYSTEM)
     set(USE_EMAR  "-e s,ar rc,emar rc,")
   endif()
 
+  # Where the sources come from: a local checkout built in place, or the pinned
+  # upstream tarball. Everything after this point is identical -- BUILD_IN_SOURCE
+  # means <SOURCE_DIR> is the checkout either way, and CaDiCaL's own .gitignore
+  # covers the `build/` and `makefile` artefacts this produces.
+  if(CaDiCaL_SOURCE_PATH)
+    set(CaDiCaL_VERSION "local:${CaDiCaL_SOURCE_PATH}")
+    set(CaDiCaL_EP_SOURCE SOURCE_DIR "${CaDiCaL_SOURCE_PATH}")
+  else()
+    set(CaDiCaL_EP_SOURCE
+        URL https://github.com/arminbiere/cadical/archive/${CaDiCaL_VERSION}.tar.gz
+        URL_HASH SHA256=${CaDiCaL_CHECKSUM})
+  endif()
+
   set(CaDiCaL_SOURCE_DIR <SOURCE_DIR>)
   ExternalProject_Add(
     CaDiCaL-EP
     ${COMMON_EP_CONFIG}
     BUILD_IN_SOURCE ON
-    URL https://github.com/arminbiere/cadical/archive/${CaDiCaL_VERSION}.tar.gz
-    URL_HASH SHA256=${CaDiCaL_CHECKSUM}
+    ${CaDiCaL_EP_SOURCE}
     CONFIGURE_COMMAND mkdir -p <SOURCE_DIR>/build
     # avoid configure script, prepare the makefile manually
     COMMAND ${CMAKE_COMMAND} -E copy <SOURCE_DIR>/makefile.in

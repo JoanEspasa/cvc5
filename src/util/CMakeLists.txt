@@ -48,6 +48,8 @@ libcvc5_add_sources(
   index.h
   omt_result.cpp
   omt_result.h 
+  plan_index.cpp
+  plan_index.h
   ostream_util.cpp
   ostream_util.h
   poly_util.cpp

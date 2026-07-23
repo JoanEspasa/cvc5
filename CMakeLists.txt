@@ -142,6 +142,7 @@ option(USE_POLY          "Use LibPoly for polynomial arithmetic")
 # immediately fail if the dependency was not found at the specified location.
 set(GLPK_DIR          "" CACHE STRING "Set GLPK install directory")
 set(PYTHONIC_PATH     "" CACHE STRING "Set Pythonic API repository path")
+set(CaDiCaL_SOURCE_PATH "" CACHE STRING "Set CaDiCaL repository path (built in place instead of downloading the pinned tarball)")
 
 # Prepend binaries with prefix on make install
 set(PROGRAM_PREFIX    "" CACHE STRING "Program prefix on make install")
@@ -867,6 +868,9 @@ if(GLPK_DIR)
 endif()
 if(PYTHONIC_PATH)
   print_config("Pythonic API path         " ${PYTHONIC_PATH})
+endif()
+if(CaDiCaL_SOURCE_PATH)
+  print_config("CaDiCaL source path       " ${CaDiCaL_SOURCE_PATH})
 endif()
 message("")
 print_config("CPPLAGS (-D...)" "${CVC5_DEFINITIONS}")

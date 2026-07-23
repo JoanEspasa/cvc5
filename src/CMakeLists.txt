@@ -1118,6 +1118,12 @@ libcvc5_add_sources(
   theory/rewriter.cpp
   theory/rewriter.h
   theory/rewriter_attributes.h
+  theory/plan/theory_plan.cpp
+  theory/plan/theory_plan.h
+  theory/plan/theory_plan_rewriter.cpp
+  theory/plan/theory_plan_rewriter.h
+  theory/plan/theory_plan_type_rules.cpp
+  theory/plan/theory_plan_type_rules.h
   theory/sep/theory_sep.cpp
   theory/sep/theory_sep.h
   theory/sep/theory_sep_rewriter.cpp
@@ -1455,6 +1461,7 @@ add_custom_target(gen-options DEPENDS options/options.stamp)
   ${PROJECT_SOURCE_DIR}/src/theory/sets/kinds.toml
   ${PROJECT_SOURCE_DIR}/src/theory/bags/kinds.toml
   ${PROJECT_SOURCE_DIR}/src/theory/strings/kinds.toml
+  ${PROJECT_SOURCE_DIR}/src/theory/plan/kinds.toml
   ${PROJECT_SOURCE_DIR}/src/theory/quantifiers/kinds.toml)
 #-----------------------------------------------------------------------------#
 

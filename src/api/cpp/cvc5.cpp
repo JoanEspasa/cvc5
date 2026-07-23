@@ -72,6 +72,7 @@
 #include "theory/logic_info.h"
 #include "theory/theory_model.h"
 #include "util/bitvector.h"
+#include "util/plan_index.h"
 #include "util/divisible.h"
 #include "util/finite_field_value.h"
 #include "util/floatingpoint.h"
@@ -320,6 +321,10 @@ const static std::unordered_map<Kind, std::pair<internal::Kind, std::string>>
         KIND_ENUM(Kind::MATCH_BIND_CASE, internal::Kind::MATCH_BIND_CASE),
         KIND_ENUM(Kind::TUPLE_PROJECT, internal::Kind::TUPLE_PROJECT),
         KIND_ENUM(Kind::NULLABLE_LIFT, internal::Kind::NULLABLE_LIFT),
+        /* Planning --------------------------------------------------------- */
+        KIND_ENUM(Kind::PLAN_DOES, internal::Kind::PLAN_DOES),
+        KIND_ENUM(Kind::PLAN_FLUENT, internal::Kind::PLAN_FLUENT),
+        KIND_ENUM(Kind::PLAN_AUX, internal::Kind::PLAN_AUX),
         /* Separation Logic ------------------------------------------------- */
         KIND_ENUM(Kind::SEP_NIL, internal::Kind::SEP_NIL),
         KIND_ENUM(Kind::SEP_EMP, internal::Kind::SEP_EMP),
@@ -730,6 +735,13 @@ const static std::unordered_map<internal::Kind,
         {internal::Kind::TUPLE_PROJECT, Kind::TUPLE_PROJECT},
         {internal::Kind::TUPLE_PROJECT_OP, Kind::TUPLE_PROJECT},
         {internal::Kind::NULLABLE_LIFT, Kind::NULLABLE_LIFT},
+        /* Planning -------------------------------------------------------- */
+        {internal::Kind::PLAN_DOES, Kind::PLAN_DOES},
+        {internal::Kind::PLAN_DOES_OP, Kind::PLAN_DOES},
+        {internal::Kind::PLAN_FLUENT, Kind::PLAN_FLUENT},
+        {internal::Kind::PLAN_FLUENT_OP, Kind::PLAN_FLUENT},
+        {internal::Kind::PLAN_AUX, Kind::PLAN_AUX},
+        {internal::Kind::PLAN_AUX_OP, Kind::PLAN_AUX},
         /* Separation Logic ------------------------------------------------ */
         {internal::Kind::SEP_NIL, Kind::SEP_NIL},
         {internal::Kind::SEP_EMP, Kind::SEP_EMP},
@@ -908,6 +920,9 @@ const static std::unordered_set<Kind> s_indexed_kinds(
  * Mapping from external (API) kind to the corresponding internal operator kind.
  */
 const static std::unordered_map<Kind, internal::Kind> s_op_kinds{
+    {Kind::PLAN_DOES, internal::Kind::PLAN_DOES_OP},
+    {Kind::PLAN_FLUENT, internal::Kind::PLAN_FLUENT_OP},
+    {Kind::PLAN_AUX, internal::Kind::PLAN_AUX_OP},
     {Kind::BITVECTOR_BIT, internal::Kind::BITVECTOR_BIT_OP},
     {Kind::BITVECTOR_EXTRACT, internal::Kind::BITVECTOR_EXTRACT_OP},
     {Kind::BITVECTOR_REPEAT, internal::Kind::BITVECTOR_REPEAT_OP},
@@ -2226,6 +2241,9 @@ size_t Op::getNumIndicesHelper() const
     case Kind::FLOATINGPOINT_TO_UBV: size = 1; break;
     case Kind::FLOATINGPOINT_TO_SBV: size = 1; break;
     case Kind::REGEXP_REPEAT: size = 1; break;
+    case Kind::PLAN_DOES:
+    case Kind::PLAN_FLUENT:
+    case Kind::PLAN_AUX: size = 2; break;
     case Kind::BITVECTOR_EXTRACT: size = 2; break;
     case Kind::FLOATINGPOINT_TO_FP_FROM_IEEE_BV: size = 2; break;
     case Kind::FLOATINGPOINT_TO_FP_FROM_FP: size = 2; break;
@@ -2353,6 +2371,17 @@ Term Op::getIndexHelper(size_t index)
           d_nm,
           d_node->getConst<internal::RegExpRepeat>().d_repeatAmount,
           true);
+      break;
+    }
+    case Kind::PLAN_DOES:
+    case Kind::PLAN_FLUENT:
+    case Kind::PLAN_AUX:
+    {
+      // Only the two integer indices are exposed here. The entity's sort is a
+      // TypeNode in the payload, not an index -- read it with Term::getSort().
+      internal::PlanIndex pi = d_node->getConst<internal::PlanIndex>();
+      t = TermManager::mkRationalValHelper(
+          d_nm, index == 0 ? pi.getIndex() : pi.getTimestep(), true);
       break;
     }
     case Kind::BITVECTOR_EXTRACT:
@@ -6009,6 +6038,24 @@ Op TermManager::mkOp(Kind kind, const std::vector<uint32_t>& args)
   Op res;
   switch (kind)
   {
+    case Kind::PLAN_DOES:
+    case Kind::PLAN_AUX:
+    {
+      // Boolean by construction, so the sort needs no argument. A
+      // non-Boolean PLAN_FLUENT must go through mkPlanFluent().
+      CVC5_API_OP_CHECK_ARITY(nargs, 2, kind);
+      res = mkOpHelper(
+          kind, internal::PlanIndex(args[0], args[1], d_nm->booleanType()));
+      break;
+    }
+    case Kind::PLAN_FLUENT:
+    {
+      CVC5_API_OP_CHECK_ARITY(nargs, 2, kind);
+      // Boolean fluent (a predicate). Any other sort needs mkPlanFluent().
+      res = mkOpHelper(
+          kind, internal::PlanIndex(args[0], args[1], d_nm->booleanType()));
+      break;
+    }
     case Kind::BITVECTOR_EXTRACT:
       CVC5_API_OP_CHECK_ARITY(nargs, 2, kind);
       res = mkOpHelper(kind, internal::BitVectorExtract(args[0], args[1]));
@@ -6251,6 +6298,26 @@ Term TermManager::mkReal(int64_t num, int64_t den)
   //////// all checks before this line
   return TermManager::mkRationalValHelper(
       d_nm, internal::Rational(num, den), false);
+  ////////
+  CVC5_API_TRY_CATCH_END;
+}
+
+Term TermManager::mkPlanFluent(uint32_t index,
+                              uint32_t timestep,
+                              const Sort& sort)
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  CVC5_API_CHECK_SORT(sort);
+  //////// all checks before this line
+  // mkOp cannot express this: its indices are uint32_t, and a planning fluent's
+  // sort is a full TypeNode so that a fluent can range over a datatype, a set
+  // or an array -- see util/plan_index.h.
+  internal::Node op = d_nm->mkConst(internal::Kind::PLAN_FLUENT_OP,
+                                    internal::PlanIndex(index, timestep,
+                                                        *sort.d_type));
+  internal::Node res = d_nm->mkNode(internal::Kind::PLAN_FLUENT, {op});
+  (void)res.getType(true); /* kick off type checking */
+  return Term(d_nm, res);
   ////////
   CVC5_API_TRY_CATCH_END;
 }
@@ -9012,6 +9079,19 @@ std::string Solver::getVersion() const
 {
   CVC5_API_TRY_CATCH_BEGIN;
   return internal::Configuration::getVersionString();
+  CVC5_API_TRY_CATCH_END;
+}
+
+void Solver::interrupt() const
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  //////// all checks before this line
+  // Deliberately no CVC5_API_SOLVER_CHECK-style state assertions: this is the
+  // one entry point designed to be called from another thread while a query is
+  // running. SolverEngine::interrupt() is itself a no-op before full
+  // initialisation and is documented as callable from a signal handler.
+  d_slv->interrupt();
+  ////////
   CVC5_API_TRY_CATCH_END;
 }
 

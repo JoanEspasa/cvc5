@@ -1,0 +1,82 @@
+# kinds.toml
+#
+# For documentation on this file format, please refer to
+# src/theory/builtin/kinds.toml.
+#
+
+[theory]
+id                 = "THEORY_PLAN"
+base_class         = "::cvc5::internal::theory::plan::TheoryPlan"
+base_class_header  = "theory/plan/theory_plan.h"
+# "check" is load-bearing: mktheorytraits.py turns this list into
+# TheoryTraits<>::hasCheck, which gates the macro dispatch in
+# theory_engine.cpp. Omit it and the theory is never called at all.
+properties         = ["check"]
+typechecker_header = "theory/plan/theory_plan_type_rules.h"
+
+[rewriter]
+class  = "::cvc5::internal::theory::plan::TheoryPlanRewriter"
+header = "theory/plan/theory_plan_rewriter.h"
+
+# The (index, timestep) pair identifying a planning proposition. Carried as an
+# operator index rather than as child terms so that no Integer-typed subterm
+# appears -- see util/plan_index.h for why that matters.
+#
+# One operator kind per atom kind: mkmetakind.py generates an operator-kind ->
+# parameterized-kind switch and the mapping must be injective, so the three
+# atoms cannot share a single _OP kind. They do share the *payload* struct; the
+# trailing "+" on cpp_type suppresses the duplicate payload->kind constant map,
+# exactly as ProjectOp does across bags/sets/datatypes.
+[[kinds]]
+type      = "constant"
+name      = "PLAN_DOES_OP"
+class_key = "class"
+cpp_type  = "PlanIndex+"
+hasher    = "::cvc5::internal::PlanIndexHashFunction"
+header    = "util/plan_index.h"
+comment   = "operator for PLAN_DOES; payload is an instance of the cvc5::internal::PlanIndex class"
+typerule  = "SimpleTypeRule<RBuiltinOperator>"
+
+[[kinds]]
+type     = "parameterized"
+K1       = "PLAN_DOES"
+K2       = "PLAN_DOES_OP"
+children = "0:"
+comment  = "action `index` is executed at timestep `timestep`"
+typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
+
+[[kinds]]
+type      = "constant"
+name      = "PLAN_FLUENT_OP"
+class_key = "class"
+cpp_type  = "PlanIndex+"
+hasher    = "::cvc5::internal::PlanIndexHashFunction"
+header    = "util/plan_index.h"
+comment   = "operator for PLAN_FLUENT; payload is an instance of the cvc5::internal::PlanIndex class"
+typerule  = "SimpleTypeRule<RBuiltinOperator>"
+
+[[kinds]]
+type     = "parameterized"
+K1       = "PLAN_FLUENT"
+K2       = "PLAN_FLUENT_OP"
+children = "0:"
+comment  = "state of fluent `index` at timestep `timestep`; Bool for a predicate, Int/Real for a numeric or object fluent"
+typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
+
+[[kinds]]
+type      = "constant"
+name      = "PLAN_AUX_OP"
+class_key = "class"
+cpp_type  = "PlanIndex+"
+hasher    = "::cvc5::internal::PlanIndexHashFunction"
+header    = "util/plan_index.h"
+comment   = "operator for PLAN_AUX; payload is an instance of the cvc5::internal::PlanIndex class"
+typerule  = "SimpleTypeRule<RBuiltinOperator>"
+
+[[kinds]]
+type     = "parameterized"
+K1       = "PLAN_AUX"
+K2       = "PLAN_AUX_OP"
+children = "0:"
+comment  = "encoder-private auxiliary planning proposition `index` at timestep `timestep`"
+typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"

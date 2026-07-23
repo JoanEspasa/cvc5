@@ -6076,6 +6076,42 @@ enum ENUM(Kind)
    */
   EVALUE(INST_PATTERN_LIST),
 
+  /* Planning --------------------------------------------------------------- */
+
+  /**
+   * Action execution: action ``index`` is executed at ``timestep``.
+   *
+   * - Create Op of this kind with:
+   *
+   *   - TermManager::mkOp(Kind, const std::vector<uint32_t>&) with three
+   *     indices: ``{index, timestep, sort}``, where ``sort`` is 0 for Bool,
+   *     1 for Integer and 2 for Real. Only #PLAN_FLUENT may be non-Bool.
+   *
+   * - Create Term of this Kind with:
+   *
+   *   - TermManager::mkTerm(const Op&, const std::vector<Term>&) with no
+   *     children.
+   */
+  EVALUE(PLAN_DOES),
+  /**
+   * Fluent state: the state of fluent ``index`` at ``timestep``.
+   *
+   * Boolean for a predicate, Integer or Real for a numeric or object fluent --
+   * the sort comes from the third index, not from the kind. This is the only
+   * planning kind that may be non-Boolean.
+   *
+   * Indices and construction are as for #PLAN_DOES.
+   */
+  EVALUE(PLAN_FLUENT),
+  /**
+   * Auxiliary planning proposition ``index`` at ``timestep``. The meaning of
+   * ``index`` is private to the encoder that emitted the atom.
+   *
+   * Indices and construction are as for #PLAN_DOES.
+   */
+  EVALUE(PLAN_AUX),
+
+
   /* ----------------------------------------------------------------------- */
   /** Marks the upper-bound of this enumeration. */
   EVALUE(LAST_KIND)

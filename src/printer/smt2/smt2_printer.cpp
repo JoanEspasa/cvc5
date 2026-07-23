@@ -47,6 +47,7 @@
 #include "theory/uf/function_const.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "util/bitvector.h"
+#include "util/plan_index.h"
 #include "util/divisible.h"
 #include "util/finite_field_value.h"
 #include "util/floatingpoint.h"
@@ -924,6 +925,20 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
           << ")";
       stillNeedToPrintParams = false;
       break;
+    case Kind::PLAN_DOES:
+    case Kind::PLAN_FLUENT:
+    case Kind::PLAN_AUX:
+    {
+      // A planning entity has no children, so without this case only the bare
+      // operator payload would be printed and traces would be unreadable.
+      const PlanIndex& pi = n.getOperator().getConst<PlanIndex>();
+      const char* name = k == Kind::PLAN_DOES     ? "@plan.does"
+                         : k == Kind::PLAN_FLUENT ? "@plan.fluent"
+                                                  : "@plan.aux";
+      out << "(_ " << name << " " << pi.getIndex() << " " << pi.getTimestep() << ")";
+      stillNeedToPrintParams = false;
+      break;
+    }
     case Kind::APPLY_CONSTRUCTOR:
     {
       const DType& dt = DType::datatypeOf(n.getOperator());
