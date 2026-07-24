@@ -1024,6 +1024,15 @@ enum class InferenceId
   UF_ARITH_BV_CONV_VALUE_REFINE,
   //-------------------------------------- end uf theory
 
+  //-------------------------------------- plan theory
+  // the actions sharing a timestep contain a cycle in the interference
+  // relation, so no execution order of them is a valid parallel step
+  PLAN_EXISTS_CYCLE,
+  // two actions sharing a timestep interfere, which forall-step semantics
+  // forbids outright since it requires every order to be valid
+  PLAN_FORALL_MUTEX,
+  //-------------------------------------- end plan theory
+
   //-------------------------------------- lemma from modules
   // From the partition generator
   PARTITION_GENERATOR_PARTITION,

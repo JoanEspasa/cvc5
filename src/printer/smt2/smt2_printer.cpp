@@ -47,12 +47,12 @@
 #include "theory/uf/function_const.h"
 #include "theory/uf/theory_uf_rewriter.h"
 #include "util/bitvector.h"
-#include "util/plan_index.h"
 #include "util/divisible.h"
 #include "util/finite_field_value.h"
 #include "util/floatingpoint.h"
 #include "util/iand.h"
 #include "util/indexed_root_predicate.h"
+#include "util/plan_index.h"
 #include "util/real_algebraic_number.h"
 #include "util/regexp.h"
 #include "util/smt2_quote_string.h"
@@ -935,7 +935,16 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
       const char* name = k == Kind::PLAN_DOES     ? "@plan.does"
                          : k == Kind::PLAN_FLUENT ? "@plan.fluent"
                                                   : "@plan.aux";
-      out << "(_ " << name << " " << pi.getIndex() << " " << pi.getTimestep() << ")";
+      out << "(_ " << name << " " << pi.getIndex() << " " << pi.getTimestep();
+      // The sort is part of the entity's identity, so two fluents that differ
+      // only by sort are different terms; printing only the indices would
+      // render them identically. Boolean is the overwhelmingly common case and
+      // the only possibility for PLAN_DOES / PLAN_AUX, so it stays implicit.
+      if (!pi.getSort().isBoolean())
+      {
+        out << " " << pi.getSort();
+      }
+      out << ")";
       stillNeedToPrintParams = false;
       break;
     }

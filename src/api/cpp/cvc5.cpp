@@ -72,11 +72,11 @@
 #include "theory/logic_info.h"
 #include "theory/theory_model.h"
 #include "util/bitvector.h"
-#include "util/plan_index.h"
 #include "util/divisible.h"
 #include "util/finite_field_value.h"
 #include "util/floatingpoint.h"
 #include "util/iand.h"
+#include "util/plan_index.h"
 #include "util/random.h"
 #include "util/regexp.h"
 #include "util/result.h"
@@ -914,7 +914,10 @@ const static std::unordered_set<Kind> s_indexed_kinds(
      Kind::FLOATINGPOINT_TO_FP_FROM_FP,
      Kind::FLOATINGPOINT_TO_FP_FROM_REAL,
      Kind::FLOATINGPOINT_TO_FP_FROM_SBV,
-     Kind::FLOATINGPOINT_TO_FP_FROM_UBV});
+     Kind::FLOATINGPOINT_TO_FP_FROM_UBV,
+     Kind::PLAN_DOES,
+     Kind::PLAN_FLUENT,
+     Kind::PLAN_AUX});
 
 /**
  * Mapping from external (API) kind to the corresponding internal operator kind.
@@ -6039,19 +6042,14 @@ Op TermManager::mkOp(Kind kind, const std::vector<uint32_t>& args)
   switch (kind)
   {
     case Kind::PLAN_DOES:
+    case Kind::PLAN_FLUENT:
     case Kind::PLAN_AUX:
     {
-      // Boolean by construction, so the sort needs no argument. A
-      // non-Boolean PLAN_FLUENT must go through mkPlanFluent().
+      // The sort takes no argument here: PLAN_DOES and PLAN_AUX are Boolean by
+      // construction, and this builds the Boolean case of PLAN_FLUENT, i.e. a
+      // predicate. A fluent of any other sort must go through mkPlanFluent(),
+      // whose sort is a Sort rather than a uint32_t index.
       CVC5_API_OP_CHECK_ARITY(nargs, 2, kind);
-      res = mkOpHelper(
-          kind, internal::PlanIndex(args[0], args[1], d_nm->booleanType()));
-      break;
-    }
-    case Kind::PLAN_FLUENT:
-    {
-      CVC5_API_OP_CHECK_ARITY(nargs, 2, kind);
-      // Boolean fluent (a predicate). Any other sort needs mkPlanFluent().
       res = mkOpHelper(
           kind, internal::PlanIndex(args[0], args[1], d_nm->booleanType()));
       break;
@@ -6303,8 +6301,8 @@ Term TermManager::mkReal(int64_t num, int64_t den)
 }
 
 Term TermManager::mkPlanFluent(uint32_t index,
-                              uint32_t timestep,
-                              const Sort& sort)
+                               uint32_t timestep,
+                               const Sort& sort)
 {
   CVC5_API_TRY_CATCH_BEGIN;
   CVC5_API_CHECK_SORT(sort);
@@ -6312,9 +6310,9 @@ Term TermManager::mkPlanFluent(uint32_t index,
   // mkOp cannot express this: its indices are uint32_t, and a planning fluent's
   // sort is a full TypeNode so that a fluent can range over a datatype, a set
   // or an array -- see util/plan_index.h.
-  internal::Node op = d_nm->mkConst(internal::Kind::PLAN_FLUENT_OP,
-                                    internal::PlanIndex(index, timestep,
-                                                        *sort.d_type));
+  internal::Node op = d_nm->mkConst(
+      internal::Kind::PLAN_FLUENT_OP,
+      internal::PlanIndex(index, timestep, *sort.d_type));
   internal::Node res = d_nm->mkNode(internal::Kind::PLAN_FLUENT, {op});
   (void)res.getType(true); /* kick off type checking */
   return Term(d_nm, res);
@@ -8444,6 +8442,18 @@ void Solver::addPlugin(Plugin& p)
 {
   CVC5_API_TRY_CATCH_BEGIN;
   d_slv->addPlugin(p.d_pExtToInt.get());
+  CVC5_API_TRY_CATCH_END;
+}
+
+void Solver::configurePlanTheory(PlanSemantics semantics,
+                                 PlanInterferenceOracle* oracle)
+{
+  CVC5_API_TRY_CATCH_BEGIN;
+  // No ExtToInt adapter: nothing but an enum, two indices and a bool crosses
+  // here, so the public interface is usable as-is from inside the solver.
+  // Unlike a plugin this may also be set after initialization, because the
+  // theory reads it when it wants a verdict rather than at construction.
+  d_slv->getEnv().setPlanTheory(semantics, oracle);
   CVC5_API_TRY_CATCH_END;
 }
 

@@ -314,6 +314,18 @@ void Env::declareSepHeap(TypeNode locT, TypeNode dataT)
 void Env::addPlugin(Plugin* p) { d_plugins.push_back(p); }
 const std::vector<Plugin*>& Env::getPlugins() const { return d_plugins; }
 
+void Env::setPlanTheory(cvc5::PlanSemantics semantics,
+                        cvc5::PlanInterferenceOracle* oracle)
+{
+  d_planSemantics = semantics;
+  d_planInterferenceOracle = oracle;
+}
+cvc5::PlanInterferenceOracle* Env::getPlanInterferenceOracle() const
+{
+  return d_planInterferenceOracle;
+}
+cvc5::PlanSemantics Env::getPlanSemantics() const { return d_planSemantics; }
+
 theory::quantifiers::OracleChecker* Env::getOracleChecker() const
 {
   return d_ochecker.get();

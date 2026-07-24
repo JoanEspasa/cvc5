@@ -16,6 +16,8 @@
 #ifndef CVC5__SMT__ENV_H
 #define CVC5__SMT__ENV_H
 
+#include <cvc5/cvc5_plan.h>
+
 #include <memory>
 
 #include "context/cdhashset.h"
@@ -299,6 +301,20 @@ class Env
   /** Get plugins */
   const std::vector<Plugin*>& getPlugins() const;
 
+  /**
+   * Configure THEORY_PLAN with the parallel-step semantics to enforce and the
+   * interference oracle to enforce it from. Non-owning; the caller guarantees
+   * the oracle outlives every check on this environment. May be set at any
+   * time, and the oracle may be null (the default), which leaves the planning
+   * theory inert.
+   */
+  void setPlanTheory(cvc5::PlanSemantics semantics,
+                     cvc5::PlanInterferenceOracle* oracle);
+  /** Get the interference oracle, or nullptr if none was set. */
+  cvc5::PlanInterferenceOracle* getPlanInterferenceOracle() const;
+  /** Get the parallel-step semantics THEORY_PLAN should enforce. */
+  cvc5::PlanSemantics getPlanSemantics() const;
+
   /** get oracle checker */
   theory::quantifiers::OracleChecker* getOracleChecker() const;
 
@@ -414,6 +430,13 @@ class Env
    * environment
    */
   std::vector<Plugin*> d_plugins;
+  /**
+   * Interference oracle for THEORY_PLAN, or nullptr when the planning theory
+   * should stay inert. Non-owning.
+   */
+  cvc5::PlanInterferenceOracle* d_planInterferenceOracle = nullptr;
+  /** Parallel-step semantics for THEORY_PLAN; only read when the oracle is set. */
+  cvc5::PlanSemantics d_planSemantics = cvc5::PlanSemantics::ExistsStep;
   /** oracle checker */
   std::unique_ptr<theory::quantifiers::OracleChecker> d_ochecker;
   /**

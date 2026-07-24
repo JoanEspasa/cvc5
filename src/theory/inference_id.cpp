@@ -600,6 +600,8 @@ const char* toString(InferenceId i)
       return "UF_ARITH_BV_CONV_REDUCTION";
     case InferenceId::UF_ARITH_BV_CONV_VALUE_REFINE:
       return "UF_ARITH_BV_CONV_VALUE_REFINE";
+    case InferenceId::PLAN_EXISTS_CYCLE: return "PLAN_EXISTS_CYCLE";
+    case InferenceId::PLAN_FORALL_MUTEX: return "PLAN_FORALL_MUTEX";
     case InferenceId::PARTITION_GENERATOR_PARTITION:
       return "PARTITION_GENERATOR_PARTITION";
     case InferenceId::PLUGIN_LEMMA: return "PLUGIN_LEMMA";

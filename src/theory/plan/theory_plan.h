@@ -14,10 +14,21 @@
  * exists-step cycle detection, forall-step mutex propagation, lazy frame
  * axioms -- can run inside the solver rather than as an external propagator.
  *
- * At this stage the theory is deliberately inert: it accepts every fact and
- * never propagates, conflicts or lemmas. Its only job is to exist before the
- * encoder is retyped against cvc5, so that atom identity is decided once. See
- * docs/cvc5/migration-plan.md (M3) in the RantanPlan repository.
+ * The theory reasons only when an interference oracle has been registered
+ * (Solver::setPlanInterferenceOracle). Without one it observes nothing and
+ * costs nothing, which is what lets an encoding that fixes its parallelism a
+ * priori share these atoms without paying for machinery it does not want.
+ *
+ * Which parallel-step semantics is enforced is chosen by the embedder
+ * (Solver::configurePlanTheory), because both are decided from the same
+ * interference relation and differ only in what they demand of it:
+ *
+ * - ExistsStep: the actions must be executable in *some* order, which holds
+ *   exactly when the relation restricted to them is acyclic. A cycle means
+ *   every candidate order needs one action both before and after another, so
+ *   the cycle's literals are the conflict.
+ * - ForallStep: the actions must be executable in *any* order, so a single
+ *   interfering pair, in either direction, is already the conflict.
  */
 
 #include "cvc5_private.h"
@@ -25,6 +36,11 @@
 #ifndef CVC5__THEORY__PLAN__THEORY_PLAN_H
 #define CVC5__THEORY__PLAN__THEORY_PLAN_H
 
+#include <cstdint>
+#include <vector>
+
+#include "context/cdlist.h"
+#include "expr/node.h"
 #include "smt/env_obj.h"
 #include "theory/plan/theory_plan_rewriter.h"
 #include "theory/theory.h"
@@ -61,7 +77,14 @@ class TheoryPlan : public Theory
   //--------------------------------- end initialization
 
   /**
-   * Fact delivery.
+   * Fact delivery, and the theory's reasoning hook.
+   *
+   * Theory::check drains the fact queue through this method, one literal at a
+   * time in assignment order, at every check round -- including
+   * EFFORT_STANDARD, i.e. at each propagation fixpoint during the descent.
+   * That is what makes it the place to reason *incrementally*, as opposed to
+   * EFFORT_FULL, which runs only once the SAT solver already holds a complete
+   * assignment and would amount to generating a candidate plan and testing it.
    *
    * Returns true, meaning "handled; do not forward to the equality engine".
    * A theory with no equality engine *must* return true here: returning false
@@ -94,6 +117,58 @@ class TheoryPlan : public Theory
   TheoryState d_state;
   /** The inference manager. */
   TheoryInferenceManager d_im;
+
+  /**
+   * One action asserted to execute: which action, at which timestep, and the
+   * atom itself.
+   *
+   * The atom is kept rather than rebuilt so a conflict is expressed in exactly
+   * the literals the SAT solver asserted, with no reliance on reconstructing an
+   * identical term.
+   */
+  struct ActiveAction
+  {
+    uint32_t d_action;
+    uint32_t d_timestep;
+    Node d_atom;
+  };
+
+  /**
+   * The actions asserted true so far.
+   *
+   * Held on the SAT context, so the solver's own backtracking maintains it:
+   * what an external propagator needs an explicit trail, decision-level stack
+   * and push/pop bookkeeping for is here just the choice of context. Populated
+   * only while an interference oracle is registered.
+   */
+  context::CDList<ActiveAction> d_activeActions;
+
+  /**
+   * Find a cycle in the interference relation restricted to `actions`.
+   *
+   * Plain DFS over a graph whose edges are discovered by asking the oracle,
+   * rather than materialised in advance -- the point of answering interference
+   * lazily. Returns true and fills `cycle` with the actions forming it.
+   *
+   * The relation is directional, so `interferes(x, y)` is asked for every
+   * ordered pair; a mutually-interfering pair is a two-element cycle.
+   */
+  bool findInterferenceCycle(const std::vector<uint32_t>& actions,
+                             cvc5::PlanInterferenceOracle& oracle,
+                             std::vector<uint32_t>& cycle) const;
+
+  /**
+   * Find an action in `actions` that interferes with `action` in either
+   * direction, for forall-step semantics.
+   *
+   * Only pairs involving `action` are examined, which is complete because any
+   * other pair was already checked when the later of its two members was
+   * asserted.
+   */
+  bool findInterferingPartner(uint32_t action,
+                              const std::vector<uint32_t>& actions,
+                              cvc5::PlanInterferenceOracle& oracle,
+                              uint32_t& other) const;
 }; /* class TheoryPlan */
 
 }  // namespace plan

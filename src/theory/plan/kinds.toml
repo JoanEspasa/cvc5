@@ -41,7 +41,7 @@ typerule  = "SimpleTypeRule<RBuiltinOperator>"
 type     = "parameterized"
 K1       = "PLAN_DOES"
 K2       = "PLAN_DOES_OP"
-children = "0:"
+children = 0
 comment  = "action `index` is executed at timestep `timestep`"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
 
@@ -59,7 +59,7 @@ typerule  = "SimpleTypeRule<RBuiltinOperator>"
 type     = "parameterized"
 K1       = "PLAN_FLUENT"
 K2       = "PLAN_FLUENT_OP"
-children = "0:"
+children = 0
 comment  = "state of fluent `index` at timestep `timestep`; Bool for a predicate, Int/Real for a numeric or object fluent"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
 
@@ -77,6 +77,6 @@ typerule  = "SimpleTypeRule<RBuiltinOperator>"
 type     = "parameterized"
 K1       = "PLAN_AUX"
 K2       = "PLAN_AUX_OP"
-children = "0:"
+children = 0
 comment  = "encoder-private auxiliary planning proposition `index` at timestep `timestep`"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"

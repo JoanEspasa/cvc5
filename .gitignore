@@ -16,4 +16,6 @@ generated/
 .vscode
 *.pyc
 .cache
-
+# binaries built from the ADDING-A-THEORY.md demo sources at the repo root
+/plan_demo
+/plan_logic

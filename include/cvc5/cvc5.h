@@ -16,6 +16,7 @@
 #define CVC5__API__CVC5_H
 
 #include <cvc5/cvc5_kind.h>
+#include <cvc5/cvc5_plan.h>
 #include <cvc5/cvc5_proof_rule.h>
 #include <cvc5/cvc5_skolem_id.h>
 #include <cvc5/cvc5_types.h>
@@ -4055,6 +4056,8 @@ class CVC5_EXPORT TermManager
    * Boolean planning kinds but cannot express a fluent whose sort is a
    * datatype, set or array. This is the entry point for those.
    *
+   * @warning This function is experimental and may change in future versions.
+   *
    * @param index    The encoder's ground fluent id.
    * @param timestep The timestep the fluent's state is indexed at.
    * @param sort     The fluent's sort.
@@ -6425,6 +6428,25 @@ class CVC5_EXPORT Solver
    * @param p The plugin to add to this solver.
    */
   void addPlugin(Plugin& p);
+  /**
+   * Configure the planning theory (THEORY_PLAN), which decides whether the
+   * actions sharing a timestep may be executed together -- a property of the
+   * planning problem that the asserted formula does not carry.
+   *
+   * Semantics and oracle are set together because neither is usable alone: the
+   * semantics says what to demand of the interference relation, and the oracle
+   * is the only source of that relation.
+   *
+   * Non-owning: the oracle must outlive every check on this solver. Passing a
+   * null oracle, the default, leaves the planning theory inert regardless of
+   * the semantics.
+   *
+   * @warning This function is experimental and may change in future versions.
+   * @param semantics Which parallel-step semantics to enforce.
+   * @param oracle The interference oracle to consult, or nullptr.
+   */
+  void configurePlanTheory(PlanSemantics semantics,
+                           PlanInterferenceOracle* oracle);
   /**
    * Pop (a) level(s) from the assertion stack.
    *

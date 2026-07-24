@@ -13,7 +13,6 @@
 #include "theory/plan/theory_plan_type_rules.h"
 
 #include "base/check.h"
-#include "expr/node_manager.h"
 #include "util/plan_index.h"
 
 namespace cvc5::internal {
@@ -23,32 +22,43 @@ namespace plan {
 namespace {
 
 /** The declared sort of a planning entity, from its operator payload. */
-TypeNode sortOf(CVC5_UNUSED NodeManager* nm, TNode n)
+TypeNode sortOf(TNode n)
 {
   return n.getOperator().getConst<PlanIndex>().getSort();
 }
 
 }  // namespace
 
-TypeNode PlanEntityTypeRule::preComputeType(NodeManager* nm, TNode n)
+TypeNode PlanEntityTypeRule::preComputeType(CVC5_UNUSED NodeManager* nm, TNode n)
 {
-  return sortOf(nm, n);
+  return sortOf(n);
 }
 
-TypeNode PlanEntityTypeRule::computeType(NodeManager* nodeManager,
+TypeNode PlanEntityTypeRule::computeType(CVC5_UNUSED NodeManager* nodeManager,
                                          TNode n,
-                                         CVC5_UNUSED bool check,
-                                         CVC5_UNUSED std::ostream* errOut)
+                                         bool check,
+                                         std::ostream* errOut)
 {
   const Kind k = n.getKind();
   Assert(k == Kind::PLAN_DOES || k == Kind::PLAN_FLUENT || k == Kind::PLAN_AUX);
+  const TypeNode sort = sortOf(n);
   // Only PLAN_FLUENT may be non-Boolean: an action and an auxiliary are
-  // propositions by construction, and a mis-sorted payload would silently
-  // produce a non-Boolean "atom" that no theory could assert.
-  Assert(k == Kind::PLAN_FLUENT
-         || n.getOperator().getConst<PlanIndex>().getSort().isBoolean())
-      << "non-Boolean sort on a planning proposition";
-  return sortOf(nodeManager, n);
+  // propositions by construction, and a mis-sorted payload would otherwise
+  // produce a non-Boolean "atom" that no theory could assert. The payload is
+  // supplied from outside (TermManager::mkOp), so this is a type error to be
+  // reported rather than an internal invariant to assert: an Assert would
+  // compile away in a production build and let the malformed term through.
+  if (check && k != Kind::PLAN_FLUENT && !sort.isBoolean())
+  {
+    if (errOut)
+    {
+      (*errOut) << "Operator " << k << " expects a Boolean sort in its index. "
+                << "Found '" << sort << "'. Only PLAN_FLUENT may be "
+                << "non-Boolean.";
+    }
+    return TypeNode::null();
+  }
+  return sort;
 }
 
 }  // namespace plan
