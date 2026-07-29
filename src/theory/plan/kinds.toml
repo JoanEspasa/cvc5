@@ -18,7 +18,7 @@ typechecker_header = "theory/plan/theory_plan_type_rules.h"
 class  = "::cvc5::internal::theory::plan::TheoryPlanRewriter"
 header = "theory/plan/theory_plan_rewriter.h"
 
-# The (index, timestep) pair identifying a planning proposition. Carried as an
+# The (entityId, timestep) pair identifying a planning proposition. Carried as an
 # operator index rather than as child terms so that no Integer-typed subterm
 # appears -- see util/plan_index.h for why that matters.
 #
@@ -42,7 +42,7 @@ type     = "parameterized"
 K1       = "PLAN_DOES"
 K2       = "PLAN_DOES_OP"
 children = 0
-comment  = "action `index` is executed at timestep `timestep`"
+comment  = "action `entityId` is executed at timestep `timestep`"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
 
 [[kinds]]
@@ -60,7 +60,7 @@ type     = "parameterized"
 K1       = "PLAN_FLUENT"
 K2       = "PLAN_FLUENT_OP"
 children = 0
-comment  = "state of fluent `index` at timestep `timestep`; Bool for a predicate, Int/Real for a numeric or object fluent"
+comment  = "state of fluent `entityId` at timestep `timestep`; Bool for a predicate, Int/Real for a numeric or object fluent"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"
 
 [[kinds]]
@@ -78,5 +78,5 @@ type     = "parameterized"
 K1       = "PLAN_AUX"
 K2       = "PLAN_AUX_OP"
 children = 0
-comment  = "encoder-private auxiliary planning proposition `index` at timestep `timestep`"
+comment  = "encoder-private auxiliary planning proposition `entityId` at timestep `timestep`"
 typerule = "::cvc5::internal::theory::plan::PlanEntityTypeRule"

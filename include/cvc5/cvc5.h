@@ -4058,12 +4058,12 @@ class CVC5_EXPORT TermManager
    *
    * @warning This function is experimental and may change in future versions.
    *
-   * @param index    The encoder's ground fluent id.
+   * @param entityId The encoder's ground fluent id.
    * @param timestep The timestep the fluent's state is indexed at.
    * @param sort     The fluent's sort.
    * @return The #PLAN_FLUENT term.
    */
-  Term mkPlanFluent(uint32_t index, uint32_t timestep, const Sort& sort);
+  Term mkPlanFluent(uint32_t entityId, uint32_t timestep, const Sort& sort);
 
   /* Terms -------------------------------------------------------------- */
 

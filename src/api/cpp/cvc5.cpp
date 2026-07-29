@@ -2384,7 +2384,7 @@ Term Op::getIndexHelper(size_t index)
       // TypeNode in the payload, not an index -- read it with Term::getSort().
       internal::PlanIndex pi = d_node->getConst<internal::PlanIndex>();
       t = TermManager::mkRationalValHelper(
-          d_nm, index == 0 ? pi.getIndex() : pi.getTimestep(), true);
+          d_nm, index == 0 ? pi.getEntityId() : pi.getTimestep(), true);
       break;
     }
     case Kind::BITVECTOR_EXTRACT:
@@ -6300,7 +6300,7 @@ Term TermManager::mkReal(int64_t num, int64_t den)
   CVC5_API_TRY_CATCH_END;
 }
 
-Term TermManager::mkPlanFluent(uint32_t index,
+Term TermManager::mkPlanFluent(uint32_t entityId,
                                uint32_t timestep,
                                const Sort& sort)
 {
@@ -6312,7 +6312,7 @@ Term TermManager::mkPlanFluent(uint32_t index,
   // or an array -- see util/plan_index.h.
   internal::Node op = d_nm->mkConst(
       internal::Kind::PLAN_FLUENT_OP,
-      internal::PlanIndex(index, timestep, *sort.d_type));
+      internal::PlanIndex(entityId, timestep, *sort.d_type));
   internal::Node res = d_nm->mkNode(internal::Kind::PLAN_FLUENT, {op});
   (void)res.getType(true); /* kick off type checking */
   return Term(d_nm, res);

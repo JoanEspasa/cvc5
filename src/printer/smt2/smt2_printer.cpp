@@ -935,7 +935,7 @@ bool Smt2Printer::toStreamBase(std::ostream& out,
       const char* name = k == Kind::PLAN_DOES     ? "@plan.does"
                          : k == Kind::PLAN_FLUENT ? "@plan.fluent"
                                                   : "@plan.aux";
-      out << "(_ " << name << " " << pi.getIndex() << " " << pi.getTimestep();
+      out << "(_ " << name << " " << pi.getEntityId() << " " << pi.getTimestep();
       // The sort is part of the entity's identity, so two fluents that differ
       // only by sort are different terms; printing only the indices would
       // render them identically. Boolean is the overwhelmingly common case and

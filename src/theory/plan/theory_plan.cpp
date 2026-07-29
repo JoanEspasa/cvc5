@@ -66,7 +66,7 @@ bool TheoryPlan::preNotifyFact(TNode atom,
   if (oracle != nullptr && pol && atom.getKind() == Kind::PLAN_DOES)
   {
     const PlanIndex& pi = atom.getOperator().getConst<PlanIndex>();
-    const uint32_t action = pi.getIndex();
+    const uint32_t action = pi.getEntityId();
     const uint32_t timestep = pi.getTimestep();
 
     d_activeActions.push_back(ActiveAction{action, timestep, atom});
